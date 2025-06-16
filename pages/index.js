@@ -1,19 +1,67 @@
 import { useState } from 'react';
-import SearchForm from '../components/SearchForm';
 
 export default function Home() {
+  const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSearch = async () => {
+    if (!query.trim()) {
+      alert('Kérlek, írj be valamit a kereséshez!');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setResults([]);
+
+    try {
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Hiba a keresés során');
+      }
+
+      const data = await res.json();
+      setResults(data.results);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <main className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-4">SmartFinds</h1>
-      <p className="mb-6 text-gray-600">Find the best deals using AI</p>
-      <SearchForm onResults={setResults} />
-      <div className="mt-6 space-y-4">
-        {results.map((item, i) => (
-          <div key={i} className="border p-4 rounded shadow">
-            <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-xl font-semibold text-blue-700">{item.title}</a>
-            <p>{item.price}</p>
+    <main style={{ maxWidth: 600, margin: 'auto', padding: 20 }}>
+      <h1>SmartFinds AI-powered Deal Finder</h1>
+
+      <input
+        type="text"
+        placeholder="Mit keresel?"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        style={{ width: '100%', padding: 10, fontSize: 16 }}
+      />
+      <button onClick={handleSearch} style={{ marginTop: 10, padding: '10px 20px', fontSize: 16 }}>
+        Keresés
+      </button>
+
+      {loading && <p>Keresés folyamatban...</p>}
+      {error && <p style={{ color: 'red' }}>Hiba: {error}</p>}
+
+      <div style={{ marginTop: 20 }}>
+        {results.map((item, idx) => (
+          <div key={idx} style={{ border: '1px solid #ddd', padding: 10, marginBottom: 10 }}>
+            <a href={item.link} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 'bold', fontSize: 18, color: '#0070f3' }}>
+              {item.title}
+            </a>
+            <p>Ár: {item.price}</p>
           </div>
         ))}
       </div>
