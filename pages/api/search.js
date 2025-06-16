@@ -1,49 +1,36 @@
-import axios from "axios";
-import cheerio from "cheerio";
-
 export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Only POST requests allowed' });
+  }
+
   const { query } = req.body;
-
-  if (!query) {
-    return res.status(400).json({ error: "Missing query" });
+  if (!query || query.trim() === '') {
+    return res.status(400).json({ error: 'Missing search query' });
   }
 
-  try {
-    const searchQuery = encodeURIComponent(query + " site:amazon.com");
-    const googleUrl = `https://www.google.com/search?q=${searchQuery}`;
+  // Itt most dummy adatokat adunk vissza, működő Amazon affiliate linkkel
+  // Később ide tudunk beilleszteni valódi API hívást
 
-    const { data } = await axios.get(googleUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-      },
-    });
+  const affiliateTag = 'smartfinds024-20'; // Amazon affiliate ID-d
+  const encodedQuery = encodeURIComponent(query.trim());
 
-    const $ = cheerio.load(data);
-    const links = [];
+  const results = [
+    {
+      title: `${query} - Amazon ajánlat`,
+      price: '$499.99',
+      link: `https://www.amazon.com/s?k=${encodedQuery}&tag=${affiliateTag}`,
+    },
+    {
+      title: `${query} - AliExpress ajánlat`,
+      price: '$450.00',
+      link: `https://www.aliexpress.com/wholesale?SearchText=${encodedQuery}`,
+    },
+    {
+      title: `${query} - eBay ajánlat`,
+      price: '$470.00',
+      link: `https://www.ebay.com/sch/i.html?_nkw=${encodedQuery}`,
+    },
+  ];
 
-    $("a").each((_, el) => {
-      const href = $(el).attr("href");
-      if (href && href.includes("www.amazon.com") && href.includes("/dp/")) {
-        const match = href.match(/https?:\/\/www\.amazon\.com\/[^"]+/);
-        if (match && match[0]) {
-          const url = match[0].split("&")[0];
-          if (!links.includes(url)) {
-            links.push(url + "?tag=smartfinds024-20"); // 👈 Amazon affiliate ID hozzáadása
-          }
-        }
-      }
-    });
-
-    const results = links.slice(0, 5).map((link, i) => ({
-      title: `Amazon Result ${i + 1}`,
-      link,
-    }));
-
-    res.status(200).json({ results });
-  } catch (error) {
-    console.error("Error during search:", error);
-    res.status(500).json({ error: "Search failed" });
-  }
+  res.status(200).json({ results });
 }
-
