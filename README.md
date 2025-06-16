@@ -1,2 +1,3 @@
 # SmartFinds
-An AI-powered product recommendation site using affiliate links.
+
+AI-powered affiliate product search engine.
